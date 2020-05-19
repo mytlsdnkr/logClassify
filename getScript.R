@@ -1,8 +1,9 @@
 library(stringr)
 library(tm)
 library(filesstrings)
+library(stringi)
 
-setwd("/root/workspace/logClassify");
+setwd("/home/park/workspace/logClassify");
 
 get_group <- function(i,group){
   a<-str_split(i,"-")
@@ -15,7 +16,7 @@ get_group <- function(i,group){
   
 }
 
-get_description <- functions(i,description){
+get_description <- function(i,description){
   alert_description<-str_split(i,"->")
   alert_description<-unlist(alert_description)
   alert_description<-str_trim(alert_description[2])
@@ -26,42 +27,66 @@ get_description <- functions(i,description){
   
   
 }
-
-preprocessing_description<-function(description){
-  description<-str_split(description," ")
-  description<-unlist(description)
-  description<-description[description!=""]
-  description<-unique(description)
-  
-  description<-gsub("(","",description,fixed=TRUE)
-  description<-gsub(")","",description,fixed=TRUE)
-  description<-gsub("'","",description,fixed=TRUE)
-  description<-gsub(":","",description,fixed=TRUE)
-  description<-gsub(".","",description,fixed=TRUE)
-  
-  for(i in description){
-    if(nchar(i)<=2){
-      description<-description[description!=i]
-    }
-    else{
+preprocessing_group<-function(group){
+  group<-unique(group)
+  group<-group[group!=""]
+  group <- group[!is.na(group)]
+  count <- 0
+  for(i in group){
+    group[count]<-str_trim(i)
+    count <- count+1
+  }
+  for(num in group){
+    if(nchar(num,type="width")<=2){
+      group<-group[group!=num]
+    }else{
       next
     }
-    
   }
   
-  return(description)
+  return(group)
+  
   
   
   
 }
 
+preprocessing_description<-function(description){
+  current_description <- vector()
+  description <- na.omit(description)
+  description<-description[description!=""]
+  description<-unique(description)
+  description<-gsub("(","",description,fixed=TRUE)
+  description<-gsub(")","",description,fixed=TRUE)
+  description<-gsub("'","",description,fixed=TRUE)
+  description<-gsub(":","",description,fixed=TRUE)
+  description<-gsub(".","",description,fixed=TRUE)
+for(i in description){
+  imsi <- strsplit(i," ",fixed=TRUE)
+  imsi <- unlist(imsi)
+  for(k in imsi){
+    imsi_vector <- vector()
+    if(nchar(k,type="width")<=2){
+      imsi_vector<-imsi[imsi!=k]
+    }
+  }
+  current_description <- c(current_description,imsi_vector)
+}
+  current_description <- unique(current_description)
+  
+  for(i in current_description){
+    if(nchar(i,type="width")<=2){
+      current_description <- current_description[current_description!=i]
+    }
+  }
+  return(current_description)
+  
+}
 
 
-
-
-setwd("/root/workspace/logClassify");
-load("data/group.txt")
-load("data/description.txt")
+setwd("/home/park/workspace/logClassify");
+group <- vector();
+description <- vector();
 dir<-list.files(path="log",pattern=NULL)
 for(i in dir){
   dpath<-paste(c("log/"),i,sep="")
@@ -69,11 +94,11 @@ for(i in dir){
   fileList<-list.files(path=".",pattern=NULL)
   
   for(j in fileList){
-    text<-readLines(j,encoding="euc-kr");
+    
+    text<-readLines(j,encoding="utf-8");
     
     count<- -1
     for(k in text){
-      print(k)
       if(nchar(k)!=0){
         count<-count+1
         if(count==0){
@@ -91,22 +116,15 @@ for(i in dir){
     
     
   }
-  setwd("/root/workspace/logClassify");
+  setwd("/home/park/workspace/logClassify");
   cmd<-paste(c("mv -f "),dpath,sep="")
   cmd<-paste(cmd," usedData",sep="")
-  print(cmd)
   system(cmd)
-  
-  
 }
 
+group <- preprocessing_group(group)
+description <- preprocessing_description(description)
 
 
-description<-preprocessing_description(description)
-
-
-group<-unique(group)
-description<-unique(description)
-group<-group[group!=""]
 save(group,file="data/group.txt")
-save(description,file="data/description.txt")
+save(current_description,file="data/description.txt")
